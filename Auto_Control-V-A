@@ -1,0 +1,171 @@
+
+local component = require("component")
+
+Addresses_rod = {}
+
+Addresses_fluid = {}
+
+Addresses_Energy = {}
+
+Addresses_Fuel = {}
+
+Addresses_Geiger = {}
+
+for id,name in component.list() do 
+  if name == "rbmk_control_rod" then
+    table.insert(Addresses_rod,id)
+  end
+  if name == "ntm_fluid_gauge" then
+    table.insert(Addresses_fluid,id)
+  end
+  if name == "ntm_energy_storage " then
+    table.insert(Addresses_Energy,id)
+  end
+  if name == "rbmk_fuel_rod" or name == "rbmk_fuel_rod_reasim" then
+    table.insert(Addresses_Fuel,id)
+  end
+  if name == "ntm_geiger" then
+    table.insert(Addresses_Geiger,id)
+  end
+end
+
+print("Print Address? y/n:")
+local answer_u = io.read()
+
+print("Boting...")
+
+while true do
+  os.sleep(1)
+  os.execute("clear")
+  print("RBMK Column controler:")
+  print("---------------------------------------------------------------------------------------------------------------------------------------------------------------")
+  print("Road Status:")
+  for i = 1, #Addresses_rod do
+      local address = Addresses_rod[i]
+      if answer_u == "y" then
+        print("Checking Road", i, "at address:", address,"|")
+      end
+
+      local successLevel, resultLevel = pcall(component.invoke, address, "getLevel")
+      local successTemp, resultTemp = pcall(component.invoke, address, "getHeat")
+      
+
+      if successLevel and successTemp then
+          print("* Road", i,"|", "Level:", resultLevel,"|" ,"Temperature:\27[31m",math.floor(resultTemp),"\27[m C       |")
+      else
+          if not successLevel then
+              print("Error getting level for Road", i, "at address:", address, ":", resultLevel)
+          end
+          if not successTemp then
+              print("Error getting temperature for Road", i, "at address:", address, ":", resultTemp)
+          end
+      end
+
+      if successLevel and successTemp then
+        if resultTemp >= 700 then
+          component.invoke(address, "setLevel", 0)
+          print ("!* Road",i,"Was accidentally lowered due to temperature:",resultTemp,"(check if all systems are ok!)")
+        end
+      end
+  end
+  print("---------------------------------------------------------------------------------------------------------------------------------------------------------------")  
+  print("Steam-Water Flow:")
+  for f = 1, #Addresses_fluid do
+    local address_fluid = Addresses_fluid[f]
+    if answer_u == "y" then
+      print("Cheking Flow pipe",f,"at address:",address_fluid,"|")
+    end
+
+    local successFluid_T, resultTransfer = pcall(component.invoke,address_fluid,"getTransfer")
+    local successFluid_F, resultFluid = pcall(component.invoke,address_fluid,"getFluid")
+    
+    if successFluid_T and successFluid_F then
+      print("* Flow",f,"| Transfer(Per tick & second):\27[36m",resultTransfer, "\27[mFluid:",resultFluid,"|")
+      if resultTransfer <= 0 and resultFluid == "Water" then
+        print("the water has run out!")
+      end
+    else
+      if not successFluid_T then
+        print("Error getting info for fluid flow Transfer",f,"at address:",address_fluid)
+      end
+      if not successFluid_F then
+        print("Error getting info for fluid flow type",f,"at address:",address_fluid)
+      end
+    end
+  end
+  print("---------------------------------------------------------------------------------------------------------------------------------------------------------------")
+  print("Fuel:")
+  for u = 1, #Addresses_Fuel do
+    local addresses_fuel = Addresses_Fuel[u]
+    if answer_u == "y" then
+      print("Cheking fuel column ",u,"at address:",addresses_fuel,"|")
+    end
+
+    local successDepletion , resultDepletion = pcall(component.invoke,addresses_fuel,"getDepletion")
+    local successXenonPoison , resultXenonPoison = pcall(component.invoke,addresses_fuel,"getXenonPoison")
+    local successFluxSlow , resultFluxSlow = pcall(component.invoke,addresses_fuel,"getFluxSlow")
+    local successFluxFast , resultFluxFast = pcall(component.invoke,addresses_fuel,"getFluxFast")
+
+    if successDepletion and successXenonPoison and successFluxSlow and successFluxFast then
+      if type(resultDepletion) == "number" and type(resultFluxSlow) == "number" and type(resultFluxFast) == "number" then
+        if resultDepletion ~= 0.0 then
+          print("* Fuel column",u,"| Depletion:\27[32m",100 - (math.floor((resultDepletion*100))),"\27[m % |","Xenon Poison:\27[35m",math.floor(resultXenonPoison),"\27[m |","In Flux Slow:",math.floor(resultFluxSlow),"/","In Flux Fast:",math.floor(resultFluxFast),"|")
+        else
+          print("* Fuel column",u,"| Status: \27[31m Depleted! \27[m")
+        end
+      else 
+        print("* Fuel column",u,"| Depletion:","N/A","|","Xenon Poison:","N/A","|","In Flux Slow:","N/A","/","In Flux Fast:","N/A","|")
+      end
+    else
+      if not successDepletion then
+        print("Error getting Depletion of fuel column",u,"at address:",addresses_fuel)
+      end
+    end
+  end
+  print("---------------------------------------------------------------------------------------------------------------------------------------------------------------")
+  print("Geiger counter:")
+  if #Addresses_Geiger >= 1 then
+    for g = 1 , #Addresses_Geiger do
+      local address_geiger = Addresses_Geiger[g]
+      if answer_u == "y" then
+        print("Cheking Geiger counter ",g,"at address:",addresses_energy,"|")
+      end
+
+      local successGeiger , resultGeiger = pcall(component.invoke,address_geiger,"getRads")
+
+      if successGeiger then
+        print("* Geiger Counter:",g,"| RAD:\27[32m",resultGeiger,"RAD/s \27[m|")
+      else
+        print("Error getting info of Geiger Counter:",g,"at address:",address_geiger)
+      end
+    end
+  else
+    print("No Geiger counter conected!")
+  end
+  print("---------------------------------------------------------------------------------------------------------------------------------------------------------------")
+  if #Addresses_Energy >= 1 then 
+    print("Energy:")
+    for e = 1, #Addresses_Energy do
+      local addresses_energy = Addresses_Energy[e]
+      if answer_u == "y" then
+        print("Cheking Energy storage ",e,"at address:",addresses_energy,"|")
+      end
+
+      local successEnergy , resultEnergy = pcall(component.invoke,addresses_energy,"getInfo")
+
+      if successEnergy then
+        print("* Storage",e,"| Info:",resultEnergy,"HE |")
+      else
+        if not successEnergy then
+          print("Error getting info for storage",e,"at address:",addresses_energy)
+        end
+      end
+    end
+  else
+    print("")
+    print("No energy  ╱|、  ?")
+    print("storage   (˚ˎ 。7  ")
+    print("          |、˜  〵 ")
+    print("          じしˍ,)ノ")
+  end
+end
