@@ -17,6 +17,7 @@ This is a Lua script designed for use with the OpenComputers mod in Minecraft 1.
 
 Components:
 -Server Rack:
+
 ![image](https://github.com/user-attachments/assets/906eab8c-fa60-41d9-9583-21f5a83f50a6)
 
 🛠️ Installation
