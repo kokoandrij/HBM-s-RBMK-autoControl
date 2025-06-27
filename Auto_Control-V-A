@@ -1,4 +1,3 @@
-
 local component = require("component")
 
 Addresses_rod = {}
@@ -18,7 +17,7 @@ for id,name in component.list() do
   if name == "ntm_fluid_gauge" then
     table.insert(Addresses_fluid,id)
   end
-  if name == "ntm_energy_storage " then
+  if name == "ntm_energy_storage" then
     table.insert(Addresses_Energy,id)
   end
   if name == "rbmk_fuel_rod" or name == "rbmk_fuel_rod_reasim" then
@@ -32,18 +31,22 @@ end
 print("Print Address? y/n:")
 local answer_u = io.read()
 
+os.execute("clear")
+
+print("Enter the maximum temperature (the rods will lower when this temperature is reached(I recomend 700)):")
+local max_Temp = tonumber(io.read())
+
 print("Boting...")
 
 while true do
   os.sleep(1)
   os.execute("clear")
-  print("RBMK Column controler:")
   print("---------------------------------------------------------------------------------------------------------------------------------------------------------------")
-  print("Road Status:")
+  print("Rod Status:")
   for i = 1, #Addresses_rod do
       local address = Addresses_rod[i]
       if answer_u == "y" then
-        print("Checking Road", i, "at address:", address,"|")
+        print("Checking Rod", i, "at address:", address,"|")
       end
 
       local successLevel, resultLevel = pcall(component.invoke, address, "getLevel")
@@ -51,48 +54,52 @@ while true do
       
 
       if successLevel and successTemp then
-          print("* Road", i,"|", "Level:", resultLevel,"|" ,"Temperature:\27[31m",math.floor(resultTemp),"\27[m C       |")
+          print("* Rod", i,"|", "Level:", resultLevel,"|" ,"Temperature:\27[31m",math.floor(resultTemp),"\27[m C       |")
       else
           if not successLevel then
-              print("Error getting level for Road", i, "at address:", address, ":", resultLevel)
+              print("Error getting level for Rod", i, "at address:", address, ":", resultLevel)
           end
           if not successTemp then
-              print("Error getting temperature for Road", i, "at address:", address, ":", resultTemp)
+              print("Error getting temperature for Rod", i, "at address:", address, ":", resultTemp)
           end
       end
 
       if successLevel and successTemp then
-        if resultTemp >= 700 then
+        if resultTemp >= max_Temp then
           component.invoke(address, "setLevel", 0)
-          print ("!* Road",i,"Was accidentally lowered due to temperature:",resultTemp,"(check if all systems are ok!)")
+          print ("!* Rod",i,"Was accidentally lowered due to temperature:",resultTemp,"(check if all systems are ok!)")
         end
       end
   end
   print("---------------------------------------------------------------------------------------------------------------------------------------------------------------")  
   print("Steam-Water Flow:")
-  for f = 1, #Addresses_fluid do
-    local address_fluid = Addresses_fluid[f]
-    if answer_u == "y" then
-      print("Cheking Flow pipe",f,"at address:",address_fluid,"|")
-    end
+  if #Addresses_fluid >= 1 then
+      for f = 1, #Addresses_fluid do
+        local address_fluid = Addresses_fluid[f]
+        if answer_u == "y" then
+          print("Cheking Flow pipe",f,"at address:",address_fluid,"|")
+        end
 
-    local successFluid_T, resultTransfer = pcall(component.invoke,address_fluid,"getTransfer")
-    local successFluid_F, resultFluid = pcall(component.invoke,address_fluid,"getFluid")
+        local successFluid_T, resultTransfer = pcall(component.invoke,address_fluid,"getTransfer")
+        local successFluid_F, resultFluid = pcall(component.invoke,address_fluid,"getFluid")
     
-    if successFluid_T and successFluid_F then
-      print("* Flow",f,"| Transfer(Per tick & second):\27[36m",resultTransfer, "\27[mFluid:",resultFluid,"|")
-      if resultTransfer <= 0 and resultFluid == "Water" then
-        print("the water has run out!")
+        if successFluid_T and successFluid_F then
+          print("* Flow",f,"| Transfer(Per tick & second):\27[36m",resultTransfer, "\27[mFluid:",resultFluid,"|")
+          if resultTransfer <= 0 and resultFluid == "Water" then
+            print("the water has run out!")
+          end
+        else
+          if not successFluid_T then
+            print("Error getting info for fluid flow Transfer",f,"at address:",address_fluid)
+          end
+          if not successFluid_F then
+            print("Error getting info for fluid flow type",f,"at address:",address_fluid)
+          end
+        end
       end
-    else
-      if not successFluid_T then
-        print("Error getting info for fluid flow Transfer",f,"at address:",address_fluid)
-      end
-      if not successFluid_F then
-        print("Error getting info for fluid flow type",f,"at address:",address_fluid)
-      end
+    else 
+        print("No Flow Gauge Pipe conected!")
     end
-  end
   print("---------------------------------------------------------------------------------------------------------------------------------------------------------------")
   print("Fuel:")
   for u = 1, #Addresses_Fuel do
