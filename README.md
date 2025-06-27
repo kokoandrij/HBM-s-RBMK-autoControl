@@ -3,11 +3,17 @@ This is a Lua script designed for use with the OpenComputers mod in Minecraft 1.
 
 ⚙️ Features:
 ✅ Monitors fuel rod status
+
 ✅ Reads values from fluid gauges (for steam/water monitoring)
+
 ✅ Integrates with Geiger counters to track radiation
+
 ✅ Collects information from energy storage units
+
 ✅ Supports boiler integration for additional safety
+
 ✅ Basic UI/text feedback for current system status
+
 ✅ Automatic reactor shutdown logic (optional)
 
 📦 Requirements:
